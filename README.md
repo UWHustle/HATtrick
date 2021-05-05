@@ -49,7 +49,7 @@
 ./HATtrickBench -init -dsn <dsn>  -usr <user> -pwd <password> -pa <path> -db <database>
 ```
 
-#### Option 3 -- Run benchmark, get results
+### Option 3 -- Run benchmark, get results
 ```
 ./HATtrickBench -run -dsn <dsn> -usr <user> -pwd <password> -tc <tc> -ac <ac> -wd <wd> -td <td> -db <database> -t <t>
 ```
