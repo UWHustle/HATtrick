@@ -2,7 +2,6 @@
 
 HATtrick benchmark is a hybrid workload that can be used to evaluate HTAP databases.  
 
-
 ### HATtrick options
 ```
 ./HATtrickBench --help / -h
