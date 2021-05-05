@@ -1,11 +1,8 @@
+# HATtrick benchmark
 
-
-
-make clean
-make all
-
+```
 ./HATtrickBench --help / -h
-
+```
 	Options:
 	1. Generate initial data:
 	    [-gen]
@@ -42,15 +39,24 @@ make all
 		-db <database>
 		-t <type: store procedure(sp) or prepared statements(ps)>		
 
-Option 1 -- Generate the data files
-./HATtrickBench -gen -pa 'path' -d '!'
+### Option 1 -- Generate the data 
+```
+./HATtrickBench -gen -pa <path> -d <d>
+```
 
-Option 2 -- Initialize DB (i.e. connect to DB, create schema, load data)
-./HATtrickBench -init -dsn 'dsn'  -usr 'user' -pwd 'password' -pa 'path' -db 'database'
+### Option 2 -- Initialize DB (i.e. connect to DB, create schema, load data)
+```
+./HATtrickBench -init -dsn <dsn>  -usr <user> -pwd <password> -pa <path> -db <database>
+```
 
-Option 3 -- Run benchmark, get results
-./HATtrickBench -run -dsn 'dsn' -usr 'user' -pwd 'password' -tc 'tc' -ac 'ac' -wd 'wd' -td 'td' -db 'database' -t 't'
+#### Option 3 -- Run benchmark, get results
+```
+./HATtrickBench -run -dsn <dsn> -usr <user> -pwd <password> -tc <tc> -ac <ac> -wd <wd> -td <td> -db <database> -t <t>
+```
 
-Option 4 -- Run benchmark and get the frontier 
-./HATtrickBench -frontier -dsn 'dsn' -usr 'user' -pwd 'password' -wd 'wd' -td 'td' -db 'database' -t 't'
+### Option 4 -- Run benchmark and get the frontier 
+```
+./HATtrickBench -frontier -dsn <dsn> -usr <user> -pwd <password> -wd <wd> -td <td> -db <database> -t <t>
+```
+
 
