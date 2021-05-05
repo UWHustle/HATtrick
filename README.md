@@ -2,6 +2,8 @@
 
 HATtrick benchmark is a hybrid workload that can be used to evaluate HTAP databases.  
 
+
+### HATtrick options
 ```
 ./HATtrickBench --help / -h
 ```
@@ -41,22 +43,22 @@ HATtrick benchmark is a hybrid workload that can be used to evaluate HTAP databa
 		-db <database>
 		-t <type: store procedure(sp) or prepared statements(ps)>		
 
-### Option 1 -- Generate the data 
+### Option 1: Generate the data 
 ```
 ./HATtrickBench -gen -pa <path> -d <d>
 ```
 
-### Option 2 -- Initialize DB (i.e. connect to DB, create schema, load data)
+### Option 2: Initialize DB (i.e. connect to DB, create schema, load data)
 ```
 ./HATtrickBench -init -dsn <dsn>  -usr <user> -pwd <password> -pa <path> -db <database>
 ```
 
-### Option 3 -- Run benchmark, get results
+### Option 3: Run benchmark, get results
 ```
 ./HATtrickBench -run -dsn <dsn> -usr <user> -pwd <password> -tc <tc> -ac <ac> -wd <wd> -td <td> -db <database> -t <t>
 ```
 
-### Option 4 -- Run benchmark and get the frontier 
+### Option 4: Run benchmark and get the frontier 
 ```
 ./HATtrickBench -frontier -dsn <dsn> -usr <user> -pwd <password> -wd <wd> -td <td> -db <database> -t <t>
 ```
