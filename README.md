@@ -1,6 +1,8 @@
-# HATtrick benchmark
+# HATtrick: An HTAP Benchmark
 
-HATtrick benchmark is a hybrid workload that can be used to evaluate HTAP databases.    
+This repository accompanies our SIGMOD 2022 paper which proposes a systematic way to evaluate HTAP databases:
+
+[Elena Milkai, Yannis Chronis, Kevin P. Gaffney, Zhihan Guo, Jignesh M. Patel, Xiangyao Yu. How Good is MY HTAP System, SIGMOD, 2022.](https://doi.org/10.1145/3514221.3526148)
 
 
 ### HATtrick options
