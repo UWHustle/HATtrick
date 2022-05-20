@@ -28,44 +28,33 @@ void Driver::setEnv(SQLHENV& env){
 }
 
 void Driver::connectDB(SQLHENV& env, SQLHDBC& dbc){
-    SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env);
-    SQLSetEnvAttr(env, SQL_ATTR_ODBC_VERSION, (SQLPOINTER) SQL_OV_ODBC3, 0);
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
     SQLRETURN ret = SQLConnect(dbc, (SQLCHAR*) UserInput::getDSN().c_str(), SQL_NTS, (SQLCHAR*) \
     UserInput::getDBUser().c_str(), SQL_NTS, (SQLCHAR*) UserInput::getDBPwd().c_str(), SQL_NTS);
-    if (ret == SQL_SUCCESS) {
-        /*if (ret == SQL_SUCCESS_WITH_INFO) {
-          printf("Driver reported the following diagnostics\n");
-          Driver::extract_error("SQLConnect", dbc, SQL_HANDLE_DBC);
-          exit(1);
-        }
-        else*/
-        printf("\n---------------------------------\n\tConnected to the DB\n---------------------------------\n\n");
+    if (ret == SQL_SUCCESS_WITH_INFO) {
+        printf("Driver reported the following diagnostics\n");
+        Driver::extract_error("SQLConnect", dbc, SQL_HANDLE_DBC);
+        exit(1);
     }
-    else {
+    else if(ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO){
         Driver::extract_error("SQLConnect", dbc, SQL_HANDLE_DBC);
         printf("\nFailed to connect!\n\n");
         exit(1);
     }
 }
 
-
-void Driver::connectDB2(SQLHENV& env, SQLHDBC& dbc){
+void Driver::connectDB2(SQLHENV& env, SQLHDBC& dbc){ // For Postgres streaming replication connection to standby
     SQLAllocHandle(SQL_HANDLE_DBC, env, &dbc);
-    SQLRETURN ret = SQLConnect(dbc, (SQLCHAR*) UserInput::getDSN().c_str(), SQL_NTS, (SQLCHAR*) \
+    SQLRETURN ret = SQLConnect(dbc, (SQLCHAR*) UserInput::getDSN2().c_str(), SQL_NTS, (SQLCHAR*) \
     UserInput::getDBUser().c_str(), SQL_NTS, (SQLCHAR*) UserInput::getDBPwd().c_str(), SQL_NTS);
     if (ret == SQL_SUCCESS_WITH_INFO) {
-        /*if (ret == SQL_SUCCESS_WITH_INFO) {
-            printf("Driver reported the following diagnostics\n");
-            Driver::extract_error("SQLConnect", dbc, SQL_HANDLE_DBC);
-            exit(1);
-        }
-        else*/
-        printf("\n---------------------------------\n\tConnected to the DB\n---------------------------------\n\n");
-    }
+        printf("Driver reported the following diagnostics\n");
+        Driver::extract_error("SQLConnect", dbc, SQL_HANDLE_DBC);
+        exit(1);
+    } 
     else if(ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO){
         Driver::extract_error("SQLConnect", dbc, SQL_HANDLE_DBC);
-        printf("\nFailed to connect!\n\n");
+        printf("\nFailed to connect to node 2!\n\n");
         exit(1);
     }
 }
@@ -73,16 +62,14 @@ void Driver::connectDB2(SQLHENV& env, SQLHDBC& dbc){
 int Driver::executeStmtDiar(SQLHSTMT& stmt, const char* query){
     SQLRETURN ret = SQLExecDirect(stmt, (SQLCHAR*) query, SQL_NTS);
     if (ret == SQL_SUCCESS_WITH_INFO) {
-        printf("SUCCESS_WITH_INFO Driver reported the following diagnostics\n");
+	printf("Driver reported the following diagnostics\n");
         extract_error("SQLExecuteDirect", stmt, SQL_HANDLE_STMT);
-        //exit(1);*/  
-	      return 1;
+	return 1;
       }
     
     else if(ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO) {
       fprintf(stderr, "\nFailed to execute directly the stmt!\n\n");
       extract_error("FAIL: SQLExecuteDirect", stmt, SQL_HANDLE_STMT);
-      //exit(1);*/
       return 2;
     }
     return 0;
@@ -90,17 +77,15 @@ int Driver::executeStmtDiar(SQLHSTMT& stmt, const char* query){
 
 int Driver::executeStmt(SQLHSTMT& stmt){
     SQLRETURN ret = SQLExecute(stmt);
-    if (ret == SQL_SUCCESS_WITH_INFO){
-      printf("Driver reported the following diagnostics\n");
-      extract_error("SQLExecute", stmt, SQL_HANDLE_STMT);
-      //exit(1);*/
+      if (ret == SQL_SUCCESS_WITH_INFO){
+      	printf("Driver reported the following diagnostics\n");
+      	extract_error("SQLExecute", stmt, SQL_HANDLE_STMT);
       return 1;
       
     }
     else if(ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO){
       fprintf(stderr, "\nFailed to execute stmt!\n\n");
       extract_error("SQLExecute", stmt, SQL_HANDLE_STMT);
-      //exit(1);*/
       return 2;
     }
     return 0;
@@ -112,7 +97,6 @@ void Driver::prepareStmt(SQLHDBC& dbc, SQLHSTMT& stmt, const char* query){
           printf("Driver reported the following diagnostics:\n");
           Driver::extract_error("SQLAllocHandle", stmt, SQL_HANDLE_STMT);
           exit(1);
-      
     }
     else if(ret != SQL_SUCCESS && ret != SQL_SUCCESS_WITH_INFO){
         fprintf(stderr, "\nFailed to allocate stmt!\n\n");
@@ -164,7 +148,7 @@ void Driver::bindCharColumn(SQLHSTMT& stmt, char* colBuf, int size,  int colNum)
     }
 }
 
-void Driver::bindIntColumn(SQLHSTMT& stmt, int& colBuf, int colNum){
+void Driver::bindIntColumn(SQLHSTMT& stmt, int& colBuf, int& colNum){
     SQLLEN indicator = 0;
     SQLRETURN ret = SQLBindCol(stmt, colNum, SQL_C_DEFAULT, &colBuf, 0, &indicator);
     if (ret == SQL_SUCCESS) {
@@ -420,19 +404,3 @@ void Driver::endOfTransaction(SQLHDBC& dbc){
     }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

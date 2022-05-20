@@ -1,3 +1,4 @@
+
 #ifndef USERINPUT_H
 #define USERINPUT_H
 
@@ -7,7 +8,7 @@
 #include <cmath>
 
 using namespace std;
-enum database{postgres, systemx, tidb};
+enum database{postgres, sqlserver, tidb, mysql};
 enum exectype{ps, sp}; // prepared statements or stored procedures
 
 class UserInput{
@@ -21,6 +22,7 @@ class UserInput{
         static const int loSize;            // size of the generated LineOrder table
 	    static string dataPath;             // path of the generated data
 	    static string dsn;                  // data source name
+	    static string dsn2;
 	    static string dbUser;               // database user name
 	    static string dbPwd;                // database password
         static int work;                    // (-h/--help) 0, generation of data (-gen) 1, run benchmark (-run) 2
@@ -42,6 +44,7 @@ class UserInput{
 	    static const int getLoSize();
         static string getDataPath();
         static string getDSN();
+	static string getDSN2();
         static string getDBUser();
         static string getDBPwd();
 	    static int getWork();
@@ -58,3 +61,5 @@ class UserInput{
 		static exectype& getExecType();
 };
 #endif
+
+

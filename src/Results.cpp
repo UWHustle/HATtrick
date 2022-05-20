@@ -1,4 +1,8 @@
+
 #include "Results.h"
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 void Results::setTotalQueries(vector<AnalyticalClient*>& a){
     for(int i=0; i<UserInput::getAnalClients(); i++) {
@@ -8,10 +12,9 @@ void Results::setTotalQueries(vector<AnalyticalClient*>& a){
 
 void Results::setTotalTxns(vector<TransactionalClient*>& t){
     for(int i=0; i<UserInput::getTranClients(); i++) {
-        totalTxns += t[i]->GetTransactionNum();
+        totalTxns += t[i]->GetLocalCounter();
     }
 }
-
 
 double Results::getTransactionalThroughput(){
     return t_throughput;
@@ -30,26 +33,24 @@ void Results::setAnalyticalThroughput(double& at){
 }
 
 void Results::saveResults() {
-    double tt = 0;
-    double at = 0;
-    if(totalQueries == 0)
-            at = 0;
-    else
+    fs::create_directory("results");	
+    double tt = 0, at = 0;
+    if(totalQueries != 0){
             at = (double)totalQueries/testDuration;
+    }	    
     setAnalyticalThroughput(at);
-    if(totalTxns == 0)
-            tt = 0;
-    else
+    if(totalTxns != 0){
             tt = (double)totalTxns/UserInput::getTestDuration();
+    }
     setTransactionalThroughput(tt);
-    resultsStream.open("results-SF"+to_string(UserInput::getSF())+".txt", ofstream::out | ofstream::app | ofstream::binary);
+    resultsStream.open("results/results-SF"+to_string(UserInput::getSF())+".txt", ofstream::out | ofstream::app | ofstream::binary);
     resultsStream << "--------------------------------------------" << endl;
     resultsStream << "Available threads in the system: " << thread::hardware_concurrency() << endl;
     resultsStream << "Anal. Threads #: " << UserInput::getAnalClients() << endl;
     resultsStream << "Tran. Threads #: " << UserInput::getTranClients() << endl;
     resultsStream << "Total # of transactions executed: " << totalTxns << endl;
     resultsStream << "Total # of queries executed: " << totalQueries << endl;
-    resultsStream << "Anal. Throughput [queries/sec]: " << getAnalyticalThroughput() << endl; //UserInput::getTestDuration() << endl;
+    resultsStream << "Anal. Throughput [queries/sec]: " << getAnalyticalThroughput()  << endl;
     resultsStream << "Tran. Throughput [transactions/sec]: " << getTransactionalThroughput() << endl;
     resultsStream << "Avg. Latency for New-Order Tran: " << txnLatency[0] << endl;
     resultsStream << "Avg. Latency for Payment Tran: " << txnLatency[1] << endl;
@@ -67,13 +68,24 @@ void Results::saveResults() {
     resultsStream << "Avg. Execution Time for Q11: " << queryExecTime[10] << endl;
     resultsStream << "Avg. Execution Time for Q12: " << queryExecTime[11] << endl;
     resultsStream << "Avg. Execution Time for Q13: " << queryExecTime[12] << endl;
-    resultsStream << "Percentage of fresh queries during the test [%]: " << freshness*100 << endl;
+    resultsStream << "Percentage of fresh queries during the test [%]: " << 100-fresh_score << endl;
     resultsStream << "Real test duration: " << testDuration << endl;
     resultsStream.close();
     resultsStream.clear();
-    resultsStream.open("frontier-SF"+to_string(UserInput::getSF())+".csv", ofstream::out | ofstream::app | ofstream::binary);
+    resultsStream.open("results/frontier-SF"+to_string(UserInput::getSF())+".csv", ofstream::out | ofstream::app | ofstream::binary);
     resultsStream << tt << "," << at <<  endl;
     resultsStream.close();
+    if(UserInput::getAnalClients()>0){
+    	resultsStream.clear();
+    	resultsStream.open("results/freshness-SF"+to_string(UserInput::getSF())+"-"+
+			to_string(UserInput::getTranClients())+"-"+
+			to_string(UserInput::getAnalClients())+".csv", 
+			ofstream::out | ofstream::app | ofstream::binary);
+    	for(unsigned int i =0; i<(unsigned int)probFresh.size(); i++){
+    		resultsStream << probFresh[i] << ", " <<  freshValues[i] <<  endl;
+    	}
+    	resultsStream.close();
+    }
 }
 
 void Results::getQueryExecTime(vector<AnalyticalClient*>& a){
@@ -103,11 +115,28 @@ void Results::getTxnLatency(vector<TransactionalClient*>& t){
 }
 
 void Results::getFreshness(vector<AnalyticalClient*>& a){
-    double score = 0;
+    int index = 0;
     for(int i=0; i<UserInput::getAnalClients(); i++){
-        score += a[i]->GetFreshness();
+	for(unsigned int j=0; j<a[i]->GetFreshness().size(); j++){
+            freshness.push_back(a[i]->GetFreshness()[j]);
+	}
     }
-    freshness = score / UserInput::getAnalClients();
+    sort(freshness.begin(), freshness.end());
+    index = ceil(0.95*freshness.size());
+    fresh_score = freshness[index-1];
+
+    vector<double> ceil_freshness;
+    for(int unsigned i=0; i<(unsigned int)freshness.size(); i++)
+	    ceil_freshness.push_back(ceil(freshness[i]));
+    double current, previous=-1;
+    for(int unsigned i=0; i<(unsigned int)ceil_freshness.size(); i++){
+	current  = ceil_freshness[i];
+	if(current != previous){
+		probFresh.push_back((double)count(ceil_freshness.begin(), ceil_freshness.end(), current)/freshness.size());
+		freshValues.push_back(current);
+		previous = current;
+	}
+    }
 }
 
 void Results::getTestDuration(vector<AnalyticalClient*>& a){
@@ -122,7 +151,9 @@ void Results::computeResults(vector<TransactionalClient*>& t, vector<AnalyticalC
     setTotalTxns(t);
     getTxnLatency(t);
     getQueryExecTime(a);
-    getFreshness(a);
+    if(UserInput::getAnalClients()>0){
+    	getFreshness(a);
+    }
     getTestDuration(a);
     saveResults();
 }

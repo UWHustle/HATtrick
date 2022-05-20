@@ -46,7 +46,7 @@ void GetFromDB::getNumOrders(int& lo_orderkey, SQLHENV& env){
     SQLHDBC dbc = 0;
     SQLHSTMT stmt = 0;
     SQLLEN indicator = 0;
-    Driver::connectDB2(env, dbc);
+    Driver::connectDB(env, dbc);
     Driver::allocHandle(dbc,stmt);
     Driver::executeStmtDiar(stmt, (SQLDialect::init[2]).c_str());
     SQLRETURN f = SQLFetch(stmt);
@@ -55,3 +55,4 @@ void GetFromDB::getNumOrders(int& lo_orderkey, SQLHENV& env){
     Driver::freeStmtHandle(stmt);
     Driver::disconnectDB(dbc);
 }
+

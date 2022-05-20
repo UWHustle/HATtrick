@@ -1,6 +1,4 @@
-//
-// Created by elena on 17/10/20.
-//
+
 #include "SQLDialect.h"
 
 vector<vector<string>> SQLDialect::createSchemaStmt = {
@@ -92,11 +90,8 @@ vector<vector<string>> SQLDialect::createSchemaStmt = {
                 "	H_CUSTKEY INTEGER NOT NULL,\n"
                 "	H_AMOUNT DECIMAL\n"
                 ")",
-                "CREATE TABLE HAT.FRESHNESS (\n"
-                "   F_VALUE INTEGER\n"
-                ")",
                 "CREATE OR REPLACE FUNCTION HAT.NEWORDER(orderKey INTEGER, n INTEGER, custName VARCHAR(25), \n"
-                "TEXT,  TEXT, TEXT, TEXT,  TEXT, TEXT, TEXT,  TEXT, TEXT, TEXT, TEXT, TEXT) RETURNS void\n"
+                "TEXT,  TEXT, TEXT, TEXT,  TEXT, TEXT, TEXT,  TEXT, TEXT, TEXT, TEXT, TEXT, tableName TEXT, txnNum INTEGER) RETURNS void\n"
                 "       LANGUAGE plpgsql\n"
                 "       AS $$\n"
                 "       DECLARE\n"
@@ -122,6 +117,7 @@ vector<vector<string>> SQLDialect::createSchemaStmt = {
                 "               custKey INTEGER := 0;\n"
                 "       BEGIN\n"
                 "	        SELECT C_CUSTKEY INTO custKey FROM HAT.CUSTOMER WHERE C_NAME = custName;\n"
+                "               EXECUTE format('UPDATE HAT.%I SET F_TXNNUM = %L', tableName, txnnum);\n"
                 "	        LOOP\n"
                 "		        exit when i = n;\n"
                 "		        i := i + 1;\n"
@@ -136,16 +132,17 @@ vector<vector<string>> SQLDialect::createSchemaStmt = {
                 "                       INSERT INTO HAT.LINEORDER(LO_ORDERKEY, LO_LINENUMBER, LO_CUSTKEY, LO_PARTKEY, LO_SUPPKEY, LO_ORDERDATE, \n"
                 "                       LO_ORDPRIORITY, LO_SHIPPRIORITY, LO_QUANTITY, LO_EXTENDEDPRICE, LO_DISCOUNT, LO_REVENUE, LO_SUPPLYCOST, \n"
                 "                       LO_TAX, LO_COMMITDATE, LO_SHIPMODE)\n"
-                "                       VALUES (orderKey, i+1, custKey, partKeys[i], suppKeys[i], dateKeys[i], ordPriorities[i], shipPriorities[i], \n"
+                "                       VALUES (orderKey, i, custKey, partKeys[i], suppKeys[i], dateKeys[i], ordPriorities[i], shipPriorities[i], \n"
                 "                       quantities[i], extendedPrices[i], discounts[i], revenues[i], supplyCosts[i], taxes[i], dateKeys[i], shipModes[i]);\n"
                 "               END LOOP;\n"
                 "       END;\n"
                 "       $$;\n",
-                "CREATE FUNCTION HAT.PAYMENT(CustKey INTEGER, SuppKey INTEGER, amount DECIMAL, OrderKey INTEGER) RETURNS void\n"
+                "CREATE FUNCTION HAT.PAYMENT(CustKey INTEGER, SuppKey INTEGER, amount DECIMAL, OrderKey INTEGER, tableName TEXT, txnNum INTEGER) RETURNS void\n"
                 "       LANGUAGE plpgsql\n"
                 "       AS $$\n"
                 "       BEGIN\n"
-                "               UPDATE HAT.CUSTOMER\n"
+                "               EXECUTE format('UPDATE HAT.%I SET F_TXNNUM = %L', tableName, txnnum);\n"
+		"               UPDATE HAT.CUSTOMER\n"
                 "                       SET C_PAYMENTCNT = C_PAYMENTCNT + 1\n"
                 "                       WHERE C_CUSTKEY = CustKey;\n"                
                 "               UPDATE HAT.SUPPLIER\n"
@@ -155,28 +152,22 @@ vector<vector<string>> SQLDialect::createSchemaStmt = {
                 "                       VALUES(OrderKey, CustKey, amount);\n"
                 "       END;\n"
                 "       $$;\n",
-                "CREATE FUNCTION HAT.COUNTORDERS(CustName VARCHAR(25)) RETURNS INTEGER\n" 
+                "CREATE FUNCTION HAT.COUNTORDERS(CustName VARCHAR(25), tableName TEXT, txnNum INTEGER) RETURNS INTEGER\n" 
                 "       LANGUAGE plpgsql\n"
                 "       AS $$\n"
                 "               DECLARE custKey INTEGER;\n"
                 "               DECLARE cnt INTEGER;\n"
                 "       BEGIN\n"
-                "               SELECT C_CUSTKEY INTO custKey FROM HAT.CUSTOMER WHERE C_NAME = CustName;\n"
+                "               EXECUTE format('UPDATE HAT.%I SET F_TXNNUM = %L', tableName, txnnum);\n"
+		"               SELECT C_CUSTKEY INTO custKey FROM HAT.CUSTOMER WHERE C_NAME = CustName;\n"
                 "               SELECT COUNT(DISTINCT LO_ORDERKEY) INTO cnt FROM HAT.LINEORDER WHERE LO_CUSTKEY = custKey;\n"
                 "               RETURN cnt;\n"
                 "       END;\n"
-                "       $$;\n",
-                "CREATE FUNCTION HAT.UPDATEFRESHNESS() RETURNS void\n" 
-                "       LANGUAGE plpgsql\n"
-                "       AS $$\n"
-                "       BEGIN\n"
-                "               UPDATE HAT.FRESHNESS\n"
-                "               SET F_VALUE = F_VALUE + 1;\n"
-                "       END;\n"
                 "       $$;\n"
+
         },
 	{
-                // System-X
+                // SQL Server
                 // Schema
  		"CREATE SCHEMA HAT",
                 // Tables
@@ -268,11 +259,6 @@ vector<vector<string>> SQLDialect::createSchemaStmt = {
                 "       CONSTRAINT PK_History PRIMARY KEY NONCLUSTERED (H_ORDERKEY,H_CUSTKEY,H_AMOUNT),\n"
 		"       INDEX History_IMCCI CLUSTERED COLUMNSTORE\n"
                 ")\n"
-                "       WITH(MEMORY_OPTIMIZED = ON,DURABILITY = SCHEMA_AND_DATA)",
-                "CREATE TABLE HAT.FRESHNESS (\n"
-                "   F_KEY INTEGER NOT NULL PRIMARY KEY NONCLUSTERED,\n"
-		"   F_VALUE INTEGER\n"
-                ")\n"
                 "       WITH(MEMORY_OPTIMIZED = ON,DURABILITY = SCHEMA_AND_DATA)"
 	},
         {          
@@ -352,15 +338,169 @@ vector<vector<string>> SQLDialect::createSchemaStmt = {
                 "	LO_COMMITDATE INTEGER,\n"
                 "	LO_SHIPMODE CHAR(10),\n"
                 "	PRIMARY KEY (LO_ORDERKEY,LO_LINENUMBER)\n"
-                ")", 
+                ")",
+                "CREATE TABLE HAT.HISTORY (\n"
+                "	H_ORDERKEY INTEGER NOT NULL,\n"
+                "	H_CUSTKEY INTEGER NOT NULL,\n"
+                "	H_AMOUNT DECIMAL\n"
+                ")"
+        },
+                {          
+                // MySQL
+                "CREATE DATABASE HAT",
+                "CREATE TABLE HAT.PART (\n"
+                "	P_PARTKEY INT NOT NULL,\n"
+                "	P_NAME VARCHAR(22),\n"
+                "	P_MFGR CHAR(6),\n"
+                "	P_CATEGORY CHAR(7),\n"
+                "	P_BRAND1 CHAR(9),\n"
+                "	P_COLOR VARCHAR(11),\n"
+                "	P_TYPE VARCHAR(25),\n"
+                "	P_SIZE INT,\n"
+                "	P_CONTAINER VARCHAR(10),\n"
+                "	P_PRICE DECIMAL,\n"
+                "	PRIMARY KEY (P_PARTKEY)\n"
+                ")",
+                "CREATE TABLE HAT.CUSTOMER (\n"
+                "	C_CUSTKEY INT NOT NULL,\n"
+                "	C_NAME VARCHAR(25),\n"
+                "	C_ADDRESS VARCHAR(25),\n"
+                "	C_CITY CHAR(10),\n"
+                "	C_NATION VARCHAR(15),\n"
+                "	C_REGION VARCHAR(12),\n"
+                "	C_PHONE CHAR(15),\n"
+                "	C_MKTSEGMENT VARCHAR(10),\n"
+                "	C_PAYMENTCNT INTEGER,\n"
+                "	PRIMARY KEY (C_CUSTKEY)\n"
+                ")",
+                "CREATE TABLE HAT.SUPPLIER (\n"
+                "	S_SUPPKEY INTEGER NOT NULL,\n"
+                "	S_NAME VARCHAR(25),\n"
+                "	S_ADDRESS VARCHAR(25),\n"
+                "	S_CITY CHAR(10),\n"
+                "	S_NATION VARCHAR(15),\n"
+                "	S_REGION CHAR(12),\n"
+                "	S_PHONE CHAR(15),\n"
+                "	S_YTD DECIMAL,\n"
+                "	PRIMARY KEY (S_SUPPKEY)\n"
+                ")",
+                "CREATE TABLE HAT.DATE (\n"
+                "	D_DATEKEY INTEGER NOT NULL,\n"
+                "	D_DATE VARCHAR(18),\n"
+                "	D_DATEOFWEEK VARCHAR(9),\n"
+                "	D_MONTH VARCHAR(9),\n"
+                "	D_YEAR INTEGER,\n"
+                "	D_YEARMONTHNUM INTEGER,\n"
+                "	D_YEARMONTH CHAR(7),\n"
+                "	D_DAYNUMINWEEK INTEGER,\n"
+                "	D_DAYNUMINMONTH INTEGER,\n"
+                "	D_DAYNUMINYEAR INTEGER,\n"
+                "	D_MONTHNUMINYEAR INTEGER,\n"
+                "	D_WEEKNUMINYEAR INTEGER,\n"
+                "	D_SELLINGSEASON CHAR(15),\n"
+                "	D_LASTDAYINWEEKFL BOOLEAN,\n"
+                "	D_LASTDAYINMONTHFL BOOLEAN,\n"
+                "	D_HOLIDAYFL BOOLEAN,\n"
+                "	D_WEEKDAYFL BOOLEAN,\n"
+                "	PRIMARY KEY (D_DATEKEY)\n"
+                ")",
+                "CREATE TABLE HAT.LINEORDER (\n"
+                "	LO_ORDERKEY INTEGER NOT NULL,\n"
+                "	LO_LINENUMBER INTEGER NOT NULL,\n"
+                "	LO_CUSTKEY INTEGER,\n"
+                "	LO_PARTKEY INTEGER,\n"
+                "	LO_SUPPKEY INTEGER,\n"
+                "	LO_ORDERDATE INTEGER,\n"
+                "	LO_ORDPRIORITY CHAR(15),\n"
+                "	LO_SHIPPRIORITY CHAR(1),\n"
+                "	LO_QUANTITY INTEGER,\n"
+                "	LO_EXTENDEDPRICE DECIMAL,\n"
+                "	LO_DISCOUNT INTEGER,\n"
+                "	LO_REVENUE DECIMAL,\n"
+                "	LO_SUPPLYCOST DECIMAL,\n"
+                "	LO_TAX INTEGER,\n"
+                "	LO_COMMITDATE INTEGER,\n"
+                "	LO_SHIPMODE CHAR(10),\n"
+                "	PRIMARY KEY (LO_ORDERKEY,LO_LINENUMBER)\n"
+                ")",
                 "CREATE TABLE HAT.HISTORY (\n"
                 "	H_ORDERKEY INTEGER NOT NULL,\n"
                 "	H_CUSTKEY INTEGER NOT NULL,\n"
                 "	H_AMOUNT DECIMAL\n"
                 ")",
-                "CREATE TABLE HAT.FRESHNESS (\n"
-                "   F_VALUE INTEGER\n"
-                ")"
+                "CREATE PROCEDURE HAT.NEWORDER(OrderKey INT, CustName VARCHAR(25), PartKey INT, PartKey2 INT, PartKey3 INT, PartKey4 INT,\n"
+                "       SuppName VARCHAR(25), SuppName2 VARCHAR(25), SuppName3 VARCHAR(25), SuppName4 VARCHAR(25),\n"
+                "       date VARCHAR(18), date2 VARCHAR(18), date3 VARCHAR(18), date4 VARCHAR(18),\n"
+                "       OrdPriority CHAR(15), ShipPriority CHAR(1), quantity INT, ExtendedPrice DECIMAL, discount INT, revenue DECIMAL,\n"
+                "       SupplyCost DECIMAL, tax INT, ShipMode CHAR(10))\n"
+                "       BEGIN\n"
+                "       DECLARE price DECIMAL;\n"
+                "       DECLARE price2 DECIMAL;\n"
+                "       DECLARE price3 DECIMAL;\n"
+                "       DECLARE price4 DECIMAL;\n"
+                "       DECLARE SuppKey INTEGER;\n"
+                "       DECLARE SuppKey2 INTEGER;\n"
+                "       DECLARE SuppKey3 INTEGER;\n"
+                "       DECLARE SuppKey4 INTEGER;\n"
+                "       DECLARE DateKey INTEGER;\n"
+                "       DECLARE DateKey2 INTEGER;\n"
+                "       DECLARE DateKey3 INTEGER;\n"
+                "       DECLARE DateKey4 INTEGER;\n"
+                "       DECLARE CustKey INTEGER;\n"
+                "       SET CustKey = (SELECT C_CUSTKEY FROM HAT.CUSTOMER WHERE C_NAME = CustName);\n"
+                "       SET price = (SELECT P_PRICE FROM HAT.PART WHERE P_PARTKEY = PartKey);\n"
+                "       SET SuppKey = (SELECT S_SUPPKEY FROM HAT.SUPPLIER WHERE S_NAME = SuppName);\n"
+                "       SET DateKey = (SELECT D_DATEKEY FROM HAT.DATE WHERE D_DATE = date);\n"
+                "       SET ExtendedPrice = ExtendedPrice*price;\n"
+                "       SET revenue = revenue*ExtendedPrice;\n"
+                "       INSERT INTO HAT.LINEORDER(LO_ORDERKEY, LO_LINENUMBER, LO_CUSTKEY, LO_PARTKEY, LO_SUPPKEY, LO_ORDERDATE,\n"
+                "               LO_ORDPRIORITY, LO_SHIPPRIORITY, LO_QUANTITY, LO_EXTENDEDPRICE, LO_DISCOUNT, LO_REVENUE, LO_SUPPLYCOST,\n"
+                "               LO_TAX, LO_COMMITDATE, LO_SHIPMODE)\n"
+                "               VALUES (OrderKey, 1, CustKey, PartKey, SuppKey, DateKey, OrdPriority, ShipPriority, quantity,\n"
+                "               ExtendedPrice, discount, revenue, SupplyCost, tax, DateKey, ShipMode);\n"
+                "       SET price2 = (SELECT P_PRICE FROM HAT.PART WHERE P_PARTKEY = PartKey2);\n"
+                "       SET SuppKey2 = (SELECT S_SUPPKEY FROM HAT.SUPPLIER WHERE S_NAME = SuppName2);\n"
+                "       SET DateKey2 = (SELECT D_DATEKEY FROM HAT.DATE WHERE D_DATE = date2);\n"
+                "       INSERT INTO HAT.LINEORDER(LO_ORDERKEY, LO_LINENUMBER, LO_CUSTKEY, LO_PARTKEY, LO_SUPPKEY, LO_ORDERDATE,\n"
+                "               LO_ORDPRIORITY, LO_SHIPPRIORITY, LO_QUANTITY, LO_EXTENDEDPRICE, LO_DISCOUNT, LO_REVENUE, LO_SUPPLYCOST,\n"
+                "               LO_TAX, LO_COMMITDATE, LO_SHIPMODE)\n"
+                "               VALUES (OrderKey, 2, CustKey, PartKey2, SuppKey2, DateKey2, OrdPriority, ShipPriority, quantity,\n"
+                "               ExtendedPrice, discount, revenue, SupplyCost, tax, DateKey2, ShipMode);\n"
+                "       SET price3 = (SELECT P_PRICE FROM HAT.PART WHERE P_PARTKEY = PartKey3);\n"
+                "       SET SuppKey3 = (SELECT S_SUPPKEY FROM HAT.SUPPLIER WHERE S_NAME = SuppName3);\n"
+                "       SET DateKey3 = (SELECT D_DATEKEY FROM HAT.DATE WHERE D_DATE = date3);\n"
+                "       INSERT INTO HAT.LINEORDER(LO_ORDERKEY, LO_LINENUMBER, LO_CUSTKEY, LO_PARTKEY, LO_SUPPKEY, LO_ORDERDATE,\n"
+                "               LO_ORDPRIORITY, LO_SHIPPRIORITY, LO_QUANTITY, LO_EXTENDEDPRICE, LO_DISCOUNT, LO_REVENUE, LO_SUPPLYCOST,\n"
+                "               LO_TAX, LO_COMMITDATE, LO_SHIPMODE)\n"
+                "               VALUES (OrderKey, 3, CustKey, PartKey3, SuppKey3, DateKey3, OrdPriority, ShipPriority, quantity,\n"
+                "               ExtendedPrice, discount, revenue, SupplyCost, tax, DateKey3, ShipMode);\n"
+                "       SET price4 = (SELECT P_PRICE FROM HAT.PART WHERE P_PARTKEY = PartKey4);\n"
+                "       SET SuppKey4 = (SELECT S_SUPPKEY FROM HAT.SUPPLIER WHERE S_NAME = SuppName4);\n"
+                "       SET DateKey4 = (SELECT D_DATEKEY FROM HAT.DATE WHERE D_DATE = date4);\n"
+                "       INSERT INTO HAT.LINEORDER(LO_ORDERKEY, LO_LINENUMBER, LO_CUSTKEY, LO_PARTKEY, LO_SUPPKEY, LO_ORDERDATE,\n"
+                "               LO_ORDPRIORITY, LO_SHIPPRIORITY, LO_QUANTITY, LO_EXTENDEDPRICE, LO_DISCOUNT, LO_REVENUE, LO_SUPPLYCOST,\n"
+                "               LO_TAX, LO_COMMITDATE, LO_SHIPMODE)\n"
+                "               VALUES (OrderKey, 4, CustKey, PartKey4, SuppKey4, DateKey4, OrdPriority, ShipPriority, quantity,\n"
+                "               ExtendedPrice, discount, revenue, SupplyCost, tax, DateKey4, ShipMode);\n"
+                "       END",
+                "CREATE PROCEDURE  HAT.PAYMENT(CustKey INTEGER, SuppKey INTEGER, amount DECIMAL, OrderKey INTEGER)\n"
+                "       BEGIN\n"
+                "       UPDATE HAT.CUSTOMER\n"
+                "               SET C_PAYMENTCNT = C_PAYMENTCNT + 1\n"
+                "               WHERE C_CUSTKEY = CustKey;\n"
+                "       UPDATE HAT.SUPPLIER\n"
+                "               SET S_YTD = S_YTD + amount\n"
+                "               WHERE S_SUPPKEY = SuppKey;\n"
+                "       INSERT INTO HAT.HISTORY(H_ORDERKEY, H_CUSTKEY, H_AMOUNT)\n"
+                "               VALUES(OrderKey, CustKey, amount);\n"
+                "END",
+                "CREATE PROCEDURE HAT.COUNTORDERS(CustName VARCHAR(25))\n"
+                "       BEGIN\n"
+                "       DECLARE custKey INTEGER;\n"
+                "       SET custKey = (SELECT C_CUSTKEY FROM HAT.CUSTOMER WHERE C_NAME = CustName);\n"
+                "       SELECT COUNT(*) FROM HAT.LINEORDER WHERE LO_CUSTKEY = custKey;\n"
+                "END"
+
         }
 };
 
@@ -388,32 +528,28 @@ vector<vector<string>> SQLDialect::dropSchemaStmt = {
                 "DROP INDEX hat.idx_c_name;",
                 "DROP INDEX hat.idx_s_name;",
                 "DROP INDEX hat.idx_d_date;",
-                "DROP FUNCTION IF EXISTS HAT.NEWORDER(orderKey INTEGER, n INTEGER, custName VARCHAR(25), TEXT,  TEXT, TEXT, TEXT,  TEXT, TEXT, TEXT,  TEXT, TEXT, TEXT, TEXT, TEXT)",
-                "DROP FUNCTION IF EXISTS HAT.PAYMENT(CustKey INTEGER, SuppKey INTEGER, amount DECIMAL, OrderKey INTEGER)",
-                "DROP FUNCTION IF EXISTS HAT.COUNTORDERS(CustName VARCHAR(25))",
-		"DROP FUNCTION IF EXISTS HAT.UPDATEFRESHNESS",
+                "DROP FUNCTION IF EXISTS HAT.NEWORDER(orderKey INTEGER, n INTEGER, custName VARCHAR(25), TEXT,  TEXT, TEXT, TEXT,  TEXT, TEXT, TEXT,  TEXT, TEXT, TEXT, TEXT, TEXT,  tableName TEXT, txnNum INTEGER)",
+                "DROP FUNCTION IF EXISTS HAT.PAYMENT(CustKey INTEGER, SuppKey INTEGER, amount DECIMAL, OrderKey INTEGER, tableName TEXT, txnNum INTEGER)",
+                "DROP FUNCTION IF EXISTS HAT.COUNTORDERS(CustName VARCHAR(25), tableName TEXT, txnNum INTEGER)",
                 "DROP TABLE IF EXISTS HAT.HISTORY",
                 "DROP TABLE IF EXISTS HAT.LINEORDER",
                 "DROP TABLE IF EXISTS HAT.DATE",
                 "DROP TABLE IF EXISTS HAT.PART",
                 "DROP TABLE IF EXISTS HAT.CUSTOMER",
                 "DROP TABLE IF EXISTS HAT.SUPPLIER",
-                "DROP TABLE IF EXISTS HAT.FRESHNESS",
-                "DROP SCHEMA IF EXISTS HAT"
+                //"DROP TABLE IF EXISTS HAT.FRESHNESS",
+		"DROP SCHEMA HAT CASCADE"
         },
         {
-                // System-X
+                // SQL Server
                 "DROP PROCEDURE HAT.NEWORDER;",
                 "DROP PROCEDURE HAT.PAYMENT;",
                 "DROP PROCEDURE HAT.COUNTORDERS;",
-                //"DROP PROCEDURE HAT.UPDATEFRESHNESS;",
                 "DROP TABLE IF EXISTS HAT.HISTORY",
                 "DROP TABLE IF EXISTS HAT.LINEORDER",
                 "DROP TABLE IF EXISTS HAT.DATE",
                 "DROP TABLE IF EXISTS HAT.PART",
                 "DROP TABLE IF EXISTS HAT.CUSTOMER",
-                "DROP TABLE IF EXISTS HAT.SUPPLIER",
-                "DROP TABLE IF EXISTS HAT.FRESHNESS",
                 "DROP SCHEMA IF EXISTS HAT"
         },
         {
@@ -424,7 +560,15 @@ vector<vector<string>> SQLDialect::dropSchemaStmt = {
                 "DROP TABLE IF EXISTS HAT.PART",
                 "DROP TABLE IF EXISTS HAT.CUSTOMER",
                 "DROP TABLE IF EXISTS HAT.SUPPLIER",
-                "DROP TABLE IF EXISTS HAT.FRESHNESS",
+                "DROP DATABASE HAT"
+        },
+        {        // MySQL
+                "DROP TABLE IF EXISTS HAT.HISTORY",
+                "DROP TABLE IF EXISTS HAT.LINEORDER",
+                "DROP TABLE IF EXISTS HAT.DATE",
+                "DROP TABLE IF EXISTS HAT.PART",
+                "DROP TABLE IF EXISTS HAT.CUSTOMER",
+                "DROP TABLE IF EXISTS HAT.SUPPLIER",
                 "DROP DATABASE HAT"
         }
 };
@@ -443,11 +587,11 @@ vector<vector<string>> SQLDialect::bulkLoadStmt = {
                 "COPY HAT.LINEORDER  FROM'",
                 "/lineorder.bin' CSV DELIMITER '!'",
                 "COPY HAT.HISTORY  FROM'",
-                "/history.bin' CSV DELIMITER '!'",
-                "INSERT INTO HAT.FRESHNESS(F_VALUE) VALUES(0)"
+                "/history.bin' CSV DELIMITER '!'"
+
         },
         {
-                // System-X
+                // SQL Server
                 "BULK INSERT HAT.PART FROM'",
                 "/part.bin' WITH(FORMAT = 'CSV', FIELDTERMINATOR = '!')",
                 "BULK INSERT HAT.SUPPLIER  FROM'",
@@ -459,8 +603,7 @@ vector<vector<string>> SQLDialect::bulkLoadStmt = {
                 "BULK INSERT HAT.LINEORDER  FROM'",
                 "/lineorder.bin' WITH(FORMAT = 'CSV', FIELDTERMINATOR = '!')",
                 "BULK INSERT HAT.HISTORY  FROM'",
-                "/history.bin' WITH(FORMAT = 'CSV', FIELDTERMINATOR = '!')",
-                "INSERT INTO HAT.FRESHNESS(F_KEY, F_VALUE) VALUES(1, 0)"
+                "/history.bin' WITH(FORMAT = 'CSV', FIELDTERMINATOR = '!')"
         },
         {
                 // TiDB
@@ -475,8 +618,23 @@ vector<vector<string>> SQLDialect::bulkLoadStmt = {
                 "LOAD DATA LOCAL INFILE'",
                 "/lineorder.bin' INTO TABLE HAT.LINEORDER FIELDS TERMINATED BY '!' LINES TERMINATED BY '\n'",
                 "LOAD DATA LOCAL INFILE'",
-                "/history.bin' INTO TABLE HAT.HISTORY FIELDS TERMINATED BY '!' LINES TERMINATED BY '\n'",
-                "INSERT INTO HAT.FRESHNESS(F_VALUE) VALUES(0)"
+                "/history.bin' INTO TABLE HAT.HISTORY FIELDS TERMINATED BY '!' LINES TERMINATED BY '\n'"
+        },
+        {
+                // MySQL
+                "LOAD DATA INFILE'",
+                "/part.bin' INTO TABLE HAT.PART FIELDS TERMINATED BY '!' LINES TERMINATED BY '\n'",
+                "LOAD DATA INFILE'",
+                "/supplier.bin' INTO TABLE HAT.SUPPLIER FIELDS TERMINATED BY '!' LINES TERMINATED BY '\n'",
+                "LOAD DATA INFILE'",
+                "/customer.bin' INTO TABLE HAT.CUSTOMER FIELDS TERMINATED BY '!' LINES TERMINATED BY '\n'",
+                "LOAD DATA INFILE'",
+                "/date.bin' INTO TABLE HAT.DATE FIELDS TERMINATED BY '!' LINES TERMINATED BY '\n'",
+                "LOAD DATA INFILE'",
+                "/lineorder.bin' INTO TABLE HAT.LINEORDER FIELDS TERMINATED BY '!' LINES TERMINATED BY '\n'",
+                "LOAD DATA INFILE'",
+                "/history.bin' INTO TABLE HAT.HISTORY FIELDS TERMINATED BY '!' LINES TERMINATED BY '\n'"
+	
         }
 };
 
@@ -514,12 +672,11 @@ vector<vector<string>> SQLDialect::createIndexStmt = {
                 "ANALYZE hat.supplier;",
                 "ANALYZE hat.part;",
                 "ANALYZE hat.history;",
-                "ANALYZE hat.freshness;",
                 "ANALYZE hat.date;"
         },
 
         {               
-                 // System-X
+                 // SQL Server
                 "ALTER TABLE hat.lineorder ADD CONSTRAINT fk_lo_custkey FOREIGN KEY (LO_CUSTKEY) REFERENCES HAT.CUSTOMER (C_CUSTKEY);",
                 "ALTER TABLE hat.lineorder ADD CONSTRAINT fk_lo_partkey FOREIGN KEY (LO_PARTKEY) REFERENCES HAT.PART (P_PARTKEY);",
                 "ALTER TABLE hat.lineorder ADD CONSTRAINT fk_lo_suppkey FOREIGN KEY (LO_SUPPKEY) REFERENCES HAT.SUPPLIER (S_SUPPKEY);",
@@ -530,7 +687,6 @@ vector<vector<string>> SQLDialect::createIndexStmt = {
                 "UPDATE STATISTICS hat.supplier WITH FULLSCAN, NORECOMPUTE;",
                 "UPDATE STATISTICS hat.part WITH FULLSCAN, NORECOMPUTE;",
                 "UPDATE STATISTICS hat.history WITH FULLSCAN, NORECOMPUTE;",
-                "UPDATE STATISTICS hat.freshness WITH FULLSCAN, NORECOMPUTE;",
                 "UPDATE STATISTICS hat.date WITH FULLSCAN, NORECOMPUTE;",
                 "CREATE PROCEDURE HAT.NEWORDER(@OrderKey INT, @CustName VARCHAR(25), @PartKey INT, @PartKey2 INT, @PartKey3 INT, @PartKey4 INT,\n"
                 "       @SuppName VARCHAR(25), @SuppName2 VARCHAR(25), @SuppName3 VARCHAR(25), @SuppName4 VARCHAR(25),\n"
@@ -610,14 +766,6 @@ vector<vector<string>> SQLDialect::createIndexStmt = {
                 "       DECLARE @custKey INTEGER;\n"
                 "       SET @custKey = (SELECT C_CUSTKEY FROM HAT.CUSTOMER WHERE C_NAME = @CustName);\n"
 		"       SELECT COUNT(*) FROM HAT.LINEORDER WHERE LO_CUSTKEY = @custKey;\n"		
-		"END",
-                "CREATE PROCEDURE HAT.UPDATEFRESHNESS\n"
-                "WITH NATIVE_COMPILATION, SCHEMABINDING, EXECUTE AS OWNER\n"  
-                "AS BEGIN ATOMIC WITH\n"
-                "       (TRANSACTION ISOLATION LEVEL = REPEATABLE READ, LANGUAGE = 'english')\n"
-                "       UPDATE HAT.FRESHNESS\n"
-                "       SET F_VALUE = F_VALUE + 1\n"	
-                "       WHERE F_KEY = 1\n"	
 		"END"
         },
 
@@ -637,8 +785,26 @@ vector<vector<string>> SQLDialect::createIndexStmt = {
                 "ANALYZE TABLE hat.supplier;",
                 "ANALYZE TABLE hat.part;",
                 "ANALYZE TABLE hat.history;",
-                "ANALYZE TABLE hat.freshness;",
                 "ANALYZE TABLE hat.date;"
+        },
+
+        {
+                // MySQL 
+                "ALTER TABLE HAT.LINEORDER ADD CONSTRAINT fk_lo_custkey FOREIGN KEY (LO_CUSTKEY) REFERENCES HAT.CUSTOMER (C_CUSTKEY) MATCH FULL;",
+                "ALTER TABLE HAT.LINEORDER ADD CONSTRAINT fk_lo_partkey FOREIGN KEY (LO_PARTKEY) REFERENCES HAT.PART (P_PARTKEY) MATCH FULL;",
+                "ALTER TABLE HAT.LINEORDER ADD CONSTRAINT fk_lo_suppkey FOREIGN KEY (LO_SUPPKEY) REFERENCES HAT.SUPPLIER (S_SUPPKEY) MATCH FULL;",
+                "ALTER TABLE HAT.LINEORDER ADD CONSTRAINT fk_lo_orderdate FOREIGN KEY (LO_ORDERDATE) REFERENCES HAT.DATE (D_DATEKEY) MATCH FULL;",
+                "ALTER TABLE HAT.LINEORDER ADD CONSTRAINT fk_lo_commitdate FOREIGN KEY (LO_COMMITDATE) REFERENCES HAT.DATE (D_DATEKEY) MATCH FULL;",
+                "CREATE INDEX idx_lo_custkey ON HAT.LINEORDER (lo_custkey) USING btree;", 
+                "CREATE INDEX idx_c_name ON HAT.CUSTOMER (c_name) USING btree;",
+                "CREATE INDEX idx_s_name ON HAT.SUPPLIER (s_name) USING btree;",
+                "CREATE INDEX idx_d_date ON HAT.DATE (d_date) USING btree;",
+                "ANALYZE TABLE HAT.LINEORDER;",
+                "ANALYZE TABLE HAT.CUSTOMER;",
+                "ANALYZE TABLE HAT.SUPPLIER;",
+                "ANALYZE TABLE HAT.PART;",
+                "ANALYZE TABLE HAT.HISTORY;",
+                "ANALYZE TABLE HAT.DATE;"
         }
 };
 
@@ -648,16 +814,18 @@ vector<string> SQLDialect::init = {
     "SELECT MAX(LO_ORDERKEY) FROM HAT.LINEORDER;"
 };
 
+
 vector<vector<string>> SQLDialect::deleteTuplesStmt = {
         {
                 // PostgreSQL
-                "\c hatrickbench;",
+                //"\\c hatrickbench;",
                 "set search_path to hat;",
                 "delete from hat.lineorder where lo_orderkey>",
                 "delete from hat.history where h_orderkey>"
         },
         {
-                // System-X
+                // SQL Server
+                // SQL Server
                 "USE HATRICKBENCH;",
                 "DELETE FROM HAT.LINEORDER WHERE LO_ORDERKEY>",
                 "DELETE FROM HAT.HISTORY WHERE H_ORDERKEY>"
@@ -667,30 +835,64 @@ vector<vector<string>> SQLDialect::deleteTuplesStmt = {
                 "USE HAT;",
                 "DELETE FROM LINEORDER WHERE LO_ORDERKEY>",
                 "DELETE FROM HISTORY WHERE H_ORDERKEY>"
+        },
+        {
+                // MySQL
+                "USE HAT;",
+                "DELETE FROM LINEORDER WHERE LO_ORDERKEY>",
+                "DELETE FROM HISTORY WHERE H_ORDERKEY>"
         }
 };
 
+vector<string> SQLDialect::createFreshnessTableStmt = {
+                "CREATE TABLE HAT.\"FRESHNESS",
+                "\"(F_TXNNUM INTEGER, F_CLIENTNUM INTEGER);"
+};
+
+vector<string> SQLDialect::deleteFreshnessTableStmt = {
+                "DROP TABLE HAT.\"FRESHNESS",
+		"\";"
+};
+
+vector<string> SQLDialect::populateFreshnessTableStmt = {
+                "INSERT INTO HAT.\"FRESHNESS",
+		"\"(F_TXNNUM, F_CLIENTNUM) VALUES(0,",
+		");",
+		"ALTER TABLE HAT.FRESHNESS",
+	       	" SET TIFLASH REPLICA 2;"
+};
+
 vector<vector<string>> SQLDialect::transactionalQueries = {
-        {                
+        {  //Postgres         
                 // New order transaction's commands
-                "SELECT HAT.NEWORDER(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);",
+                "SELECT HAT.NEWORDER(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);",
                 // Payment transaction
-                "SELECT HAT.PAYMENT(?,?,?,?);",
+                "SELECT HAT.PAYMENT(?,?,?,?,?,?);",
                 // Count orders transaction's commands
-                "SELECT * FROM HAT.COUNTORDERS(?);",
-                //Freshness update after every batch
-                "SELECT HAT.UPDATEFRESHNESS();"
+                "SELECT * FROM HAT.COUNTORDERS(?,?,?);"
         },
-        {
+        { //System-X
                 // New order transaction's commands
                 "{CALL HAT.NEWORDER(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)}",
                 // Payment transaction
                 "{CALL HAT.PAYMENT(?,?,?,?)}",
                 // Count orders transaction's commands
-                "{CALL HAT.COUNTORDERS(?)}",
-                //Freshness update after every batch
-                "{CALL HAT.UPDATEFRESHNESS}"
+                "{CALL HAT.COUNTORDERS(?)}"
         },
+
+        { //TiDB uses prepeared statements
+
+
+        },
+        { //MySQL
+                // New order transaction's commands
+                "{CALL HAT.NEWORDER(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)}",
+                // Payment transaction
+                "{CALL HAT.PAYMENT(?,?,?,?)}",
+                // Count orders transaction's commands
+                "{CALL HAT.COUNTORDERS(?)}"
+	}
+        
 };
 
 vector<string> SQLDialect::transactionalCommands = {
@@ -707,23 +909,22 @@ vector<string> SQLDialect::transactionalCommands = {
     // Payment transaction's commands
     "SELECT C_CUSTKEY, C_NAME FROM HAT.CUSTOMER WHERE C_NATION = ?",
     "UPDATE HAT.CUSTOMER\n"
-    "   SET C_PAYMENTCNT = C_PAYMENTCNT + 1\n"
+    "   SET C_PAYMENTCNT = 0\n" //C_PAYMENTCNT + 1\n"
     "   WHERE C_CUSTKEY = ?",
     "UPDATE HAT.SUPPLIER\n"
-    "   SET S_YTD = S_YTD + ?\n"
+    "   SET S_YTD = S_YTD - ?\n"
     "   WHERE S_SUPPKEY = ?",
     "INSERT INTO HAT.HISTORY(H_ORDERKEY, H_CUSTKEY, H_AMOUNT)\n"
     "   VALUES(?,?,?)\n",
 
     // Count orders transaction's commands
     "SELECT COUNT(DISTINCT LO_ORDERKEY)\n"
-    "FROM HAT.LINEORDER WHERE LO_CUSTKEY = ?",
+    "FROM HAT.LINEORDER WHERE LO_CUSTKEY = ?"
+};
 
-    //Freshness update after every batch
-    "UPDATE HAT.FRESHNESS\n"
-    "   SET F_VALUE = F_VALUE + 1\n",
-
-    "SET SESSION tidb_isolation_read_engines = 'tikv'"
+vector<string> SQLDialect::freshnessCommands = {
+    "UPDATE HAT.FRESHNESS",
+    " SET F_TXNNUM = ? WHERE F_CLIENTNUM = ?"
 };
 
 vector<string> SQLDialect::analyticalQueries = {     // 13 SSB Benchmark queries
@@ -819,7 +1020,7 @@ vector<string> SQLDialect::analyticalQueries = {     // 13 SSB Benchmark queries
     "   AND LO_ORDERDATE = D_DATEKEY\n"
     "   AND (C_CITY = 'UNITED KI1' OR C_CITY = 'UNITED KI5')\n"
     "   AND (S_CITY = 'UNITED KI1' OR S_CITY = 'UNITED KI5')\n"
-    "   AND D_YEARMONTH = 'Dec1997'\n"
+    "   AND D_YEARMONTH = 'Dec1994'\n"
     "   GROUP BY C_CITY, S_CITY, D_YEAR\n"
     "   ORDER BY D_YEAR ASC, REVENUE DESC",
     // Q11 / Q4.1
@@ -859,10 +1060,6 @@ vector<string> SQLDialect::analyticalQueries = {     // 13 SSB Benchmark queries
     "   AND (D_YEAR = 1997 OR D_YEAR = 1998)\n"
     "   AND P_CATEGORY = 'MFGR#14'\n"
     "   GROUP BY D_YEAR, S_CITY, P_BRAND1\n"
-    "   ORDER BY D_YEAR, S_CITY, P_BRAND1",
-    // disable intra-parallel query in TiDB
-    "SET @@tidb_distsql_scan_concurrency = 1",
-    // Set isolation level
-    //"SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY"
-    "SET SESSION tidb_isolation_read_engines = 'tiflash'"
+    "   ORDER BY D_YEAR, S_CITY, P_BRAND1"
 };
+

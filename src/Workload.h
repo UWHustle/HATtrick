@@ -1,6 +1,4 @@
-//
-// Created by elena on 18/10/20.
-//
+
 #ifndef HATTRICKBENCH_WORKLOAD_H
 #define HATTRICKBENCH_WORKLOAD_H
 #include "Driver.h"
@@ -18,7 +16,12 @@
 #include <vector>
 #include <unistd.h>
 #include <atomic>
-
+using std::chrono::duration_cast;
+using std::chrono::milliseconds;
+using std::chrono::seconds;
+using std::chrono::system_clock;
+using std::chrono::steady_clock;
+using std::chrono::high_resolution_clock;
 using namespace std;
 
 class Workload{
@@ -27,16 +30,15 @@ private:
     vector<thread> tThreads;
     vector<AnalyticalClient*> aClients;
     vector<TransactionalClient*> tClients;
-
 public:
     Workload();
     static bool runTime(chrono::steady_clock::time_point& startTime, int duration);
-    static void AnalyticalStream(AnalyticalClient* aClient, runType& typeOfRun, std::atomic<int>& freshness);
+    static void AnalyticalStream(AnalyticalClient* aClient, Globals* g);
     static void TransactionalStreamPS(TransactionalClient* tClient, Globals* g, SQLHDBC& dbc);  // for Prepared Statements
     static void TransactionalStreamSP(TransactionalClient* tClient, Globals* g, SQLHDBC& dbc);  // for Stored Procedures
-    static void AnalyticalWorkload(AnalyticalClient* aClient, SQLHENV& env, Globals* g);
-    static void TransactionalWorkload(TransactionalClient* tClient, SQLHENV& env, Globals* g, int t);
-    void ExecuteWorkloads(SQLHENV& env, Globals* g);
+    static void AnalyticalWorkload(AnalyticalClient* aClient, Globals* g);
+    static void TransactionalWorkload(TransactionalClient* tClient, Globals* g, int t);
+    void ExecuteWorkloads(Globals* g);
     void ReturnResults(Results* r);
 };
 

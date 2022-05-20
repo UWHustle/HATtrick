@@ -12,11 +12,10 @@ class Driver{
         static void setEnv(SQLHENV& env);
         static void connectDB(SQLHENV& env, SQLHDBC& dbc);
         static void connectDB2(SQLHENV& env, SQLHDBC& dbc);
-
         static int executeStmtDiar(SQLHSTMT& stmt, const char* query);
         static int executeStmt(SQLHSTMT& stmt);
         static void bindCharColumn(SQLHSTMT& stmt, char* colBuf, int size,  int colNum);
-        static void bindIntColumn(SQLHSTMT& stmt, int& colBuf, int colNum);
+        static void bindIntColumn(SQLHSTMT& stmt, int& colBuf, int& colNum);
         static void bindDecColumn(SQLHSTMT& stmt, double& colBuf, int colNum);
         static void bindCharParam(SQLHSTMT& stmt, char* param, int size, int pos);
         static void bindIntParam(SQLHSTMT& stmt, int& param, int pos);
@@ -36,3 +35,4 @@ class Driver{
         static void endOfTransaction(SQLHDBC& dbc);
 };
 #endif
+

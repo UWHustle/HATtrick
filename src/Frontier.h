@@ -26,6 +26,7 @@ private:
     vector<double> a_throughputs;
 public:
     void deleteTuples();
+    void createFreshnessTable(int& tc);
     double runBenchmark(int& peak, int& choice);
     void findMaxTCAC();
     void setMaxTC(int& tc);
@@ -33,5 +34,9 @@ public:
     int getMaxTC();
     int getMaxAC();
     void findFrontier();
+    /*void addTransactionalThroughput(double tt);
+    void addAnalyticalThroughput(double at);
+    vector<double>& getTransactionalThroughputs();
+    vector<double>& getAnalyticalThroughputs();*/
 };
 #endif //HATTRICKBENCH_FRONTIER_H

@@ -17,7 +17,6 @@ using namespace std;
 int main(int argc, char* argv[]){
     /* Read user input for flag initialization. */
     UserInput::processUserIn(argc, argv);
-
     if(UserInput::getWork() == 1){             // User selected data generation.
         auto startTime = chrono::system_clock::to_time_t(chrono::system_clock::now());
         cout << "\nChoice: [1] Data generation" << endl;
@@ -31,7 +30,6 @@ int main(int argc, char* argv[]){
         cout << "\n[DONE] Choice: [1] Data generation" << endl;
         cout << "END TIME of [1] " << ctime(&endTime) << endl;
     }
-
     else if(UserInput::getWork() == 2){        // User selected to initiate the database.
         auto startTime = chrono::system_clock::to_time_t(chrono::system_clock::now());
         cout << "\nChoice: [2] Init database" << endl;
@@ -40,8 +38,7 @@ int main(int argc, char* argv[]){
         SQLHENV env = 0;
         Driver::setEnv(env);
         SQLHDBC dbc = 0;
-        Driver::connectDB2(env, dbc);
-
+        Driver::connectDB(env, dbc);
         /* Create Schema. */
         SQLHSTMT stmt = 0;
         SQLAllocHandle(SQL_HANDLE_STMT, dbc, &stmt);
@@ -77,13 +74,11 @@ int main(int argc, char* argv[]){
     else if(UserInput::getWork() == 3){         // User selected to run the benchmark
         auto* frontier = new Frontier();
         frontier->findMaxTCAC();
-        int tc = frontier->getMaxTC();
         int ac = frontier->getMaxAC();
+        int tc = frontier->getMaxTC();
         frontier->setMaxTC(tc);
         frontier->setMaxAC(ac);
         frontier->findFrontier();
-        cout << "MAX_TC: " << frontier->getMaxTC() << endl;
-        cout << "MAX_AC: " << frontier->getMaxAC() << endl;
     }
 
     else if(UserInput::getWork() == 4){         // User selected to run the benchmark
@@ -98,14 +93,14 @@ int main(int argc, char* argv[]){
         g->barrierT = new Barrier(UserInput::getTranClients()+UserInput::getAnalClients());
         g->typeOfRun = none;
         auto* workload = new Workload();
-        workload->ExecuteWorkloads(env, g);
+        workload->ExecuteWorkloads(g);
         auto* r = new Results();
         workload->ReturnResults(r);
-        //Driver::freeEnvHandle(env);
         auto endTime = chrono::system_clock::to_time_t(chrono::system_clock::now());
         cout << "\n[DONE] Choice: [3] Run Benchmark" << endl;
         cout << "START TIME of [3] " << ctime(&startTime) << endl;
         cout << "END TIME of [3] " << ctime(&endTime) << endl;
     }
     return 0;
+
 }
