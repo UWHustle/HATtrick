@@ -8,7 +8,7 @@
 #include <cmath>
 
 using namespace std;
-enum database{postgres, sqlserver, tidb, mysql};
+enum database{postgres, systemx, tidb, mysql};
 enum exectype{ps, sp}; // prepared statements or stored procedures
 
 class UserInput{

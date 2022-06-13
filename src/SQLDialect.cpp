@@ -167,7 +167,7 @@ vector<vector<string>> SQLDialect::createSchemaStmt = {
 
         },
 	{
-                // SQL Server
+                // System-X
                 // Schema
  		"CREATE SCHEMA HAT",
                 // Tables
@@ -541,7 +541,7 @@ vector<vector<string>> SQLDialect::dropSchemaStmt = {
 		"DROP SCHEMA HAT CASCADE"
         },
         {
-                // SQL Server
+                // System-X
                 "DROP PROCEDURE HAT.NEWORDER;",
                 "DROP PROCEDURE HAT.PAYMENT;",
                 "DROP PROCEDURE HAT.COUNTORDERS;",
@@ -591,7 +591,7 @@ vector<vector<string>> SQLDialect::bulkLoadStmt = {
 
         },
         {
-                // SQL Server
+                // System-X
                 "BULK INSERT HAT.PART FROM'",
                 "/part.bin' WITH(FORMAT = 'CSV', FIELDTERMINATOR = '!')",
                 "BULK INSERT HAT.SUPPLIER  FROM'",
@@ -676,7 +676,7 @@ vector<vector<string>> SQLDialect::createIndexStmt = {
         },
 
         {               
-                 // SQL Server
+                 // System-X
                 "ALTER TABLE hat.lineorder ADD CONSTRAINT fk_lo_custkey FOREIGN KEY (LO_CUSTKEY) REFERENCES HAT.CUSTOMER (C_CUSTKEY);",
                 "ALTER TABLE hat.lineorder ADD CONSTRAINT fk_lo_partkey FOREIGN KEY (LO_PARTKEY) REFERENCES HAT.PART (P_PARTKEY);",
                 "ALTER TABLE hat.lineorder ADD CONSTRAINT fk_lo_suppkey FOREIGN KEY (LO_SUPPKEY) REFERENCES HAT.SUPPLIER (S_SUPPKEY);",
@@ -824,8 +824,7 @@ vector<vector<string>> SQLDialect::deleteTuplesStmt = {
                 "delete from hat.history where h_orderkey>"
         },
         {
-                // SQL Server
-                // SQL Server
+                // System-X
                 "USE HATRICKBENCH;",
                 "DELETE FROM HAT.LINEORDER WHERE LO_ORDERKEY>",
                 "DELETE FROM HAT.HISTORY WHERE H_ORDERKEY>"
@@ -859,7 +858,7 @@ vector<string> SQLDialect::populateFreshnessTableStmt = {
 		"\"(F_TXNNUM, F_CLIENTNUM) VALUES(0,",
 		");",
 		"ALTER TABLE HAT.FRESHNESS",
-	       	" SET TIFLASH REPLICA 2;"
+	       	" SET TIFLASH REPLICA 1;"
 };
 
 vector<vector<string>> SQLDialect::transactionalQueries = {

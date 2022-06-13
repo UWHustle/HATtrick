@@ -35,6 +35,9 @@ void Frontier::createFreshnessTable(int& tc){
 	Driver::executeStmtDiar(stmt, (SQLDialect::deleteFreshnessTableStmt[0].c_str()+s_tc+SQLDialect::deleteFreshnessTableStmt[1]).c_str());
     	Driver::executeStmtDiar(stmt, (SQLDialect::createFreshnessTableStmt[0].c_str()+s_tc+SQLDialect::createFreshnessTableStmt[1]).c_str());
 	Driver::executeStmtDiar(stmt, (SQLDialect::populateFreshnessTableStmt[0]+s_tc+SQLDialect::populateFreshnessTableStmt[1]+s_tc+SQLDialect::populateFreshnessTableStmt[2]).c_str());
+        if(UserInput::getdbChoice() == tidb){
+		Driver::executeStmtDiar(stmt, (SQLDialect::populateFreshnessTableStmt[3]+s_tc+SQLDialect::populateFreshnessTableStmt[4]).c_str());
+	}
     }
     Driver::freeStmtHandle(stmt);
     Driver::disconnectDB(dbc);

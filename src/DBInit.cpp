@@ -19,7 +19,6 @@ int DBInit::bulkLoad(SQLHSTMT& stmt){
         Driver::executeStmtDiar(stmt, (SQLDialect::bulkLoadStmt[UserInput::getdbChoice()][i]+\
         UserInput::getDataPath()+SQLDialect::bulkLoadStmt[UserInput::getdbChoice()][i+1]).c_str());
     }
-    //Driver::executeStmtDiar(stmt, (SQLDialect::bulkLoadStmt[UserInput::getdbChoice()].back()).c_str());      // freshness table initial insertion
     return 0;
 }
 

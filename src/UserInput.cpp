@@ -2,7 +2,7 @@
 #include "UserInput.h"
 
 const int UserInput::BATCH_SIZE = 64;
-const int UserInput::SF=1;  // SOS when change SF check table creation sizes of the variables!!!!
+const int UserInput::SF=1;  
 const int UserInput::custSize =  30000 * UserInput::SF;
 const int UserInput::suppSize =  2000  * UserInput::SF;
 const int UserInput::partSize =  200000 * static_cast <int>(floor(1+log2(UserInput::SF)));
@@ -116,7 +116,7 @@ void UserInput::processUserIn(int argc, char* argv[]){
                     "    -usr <DB username>\n"
                     "    -pwd <DB password>\n"
                     "    -pa <data path>\n"
-                    "    -db <DB choice [postgres, sqlserver, tidb, mysql]>\n"
+                    "    -db <DB choice [postgres, system-x, tidb, mysql]>\n"
                     "    -t  <prepared statements or stored procedures [ps, sp]>\n"
                     "\n3. Compute frontier:\n"
                     "    [-frontier]\n"
@@ -126,7 +126,7 @@ void UserInput::processUserIn(int argc, char* argv[]){
                     "    -wd <warm up duration in sec>\n"
                     "    -td <test duration in sec>\n"
                     "    -t  <prepared statements or stored procedures [ps, sp]>\n"
-                    "    -db <DB choice [postgres, sqlserver, tidb, mysql]>\n"                    
+                    "    -db <DB choice [postgres, system-x, tidb, mysql]>\n"                    
                     "\n4. Run benchmark [one experiment]:\n"
                     "    [-run]\n"
                     "    -dsn <data source name>\n"
@@ -138,7 +138,7 @@ void UserInput::processUserIn(int argc, char* argv[]){
                     "    -wd <warm up duration in sec>\n"
                     "    -td <test duration in sec>\n"
                     "    -t  <prepared statements or stored procedures [ps, sp]>\n"
-                    "    -db <DB choice [postgres, sqlserver, tidb, mysql]>\n\n";
+                    "    -db <DB choice [postgres, system-x, tidb, mysql]>\n\n";
             UserInput::work = 0;
             break;
         }
@@ -180,7 +180,7 @@ void UserInput::processUserIn(int argc, char* argv[]){
                     else if(strcmp(argv[i], "-pa") == 0 )  UserInput::dataPath = string(argv[i+1]);
                     else if(strcmp(argv[i], "-db") == 0 ) {
                         if(strcmp(argv[i+1], "postgres") == 0 ) UserInput::dbChoice = postgres;
-                        else if(strcmp(argv[i+1], "sqlserver") == 0 ) UserInput::dbChoice = sqlserver;
+                        else if(strcmp(argv[i+1], "system-x") == 0 ) UserInput::dbChoice = systemx;
                         else if(strcmp(argv[i+1], "tidb") == 0 ) UserInput::dbChoice = tidb;
                         else if(strcmp(argv[i+1], "mysql") == 0) UserInput::dbChoice = mysql;
                     }
@@ -201,7 +201,7 @@ void UserInput::processUserIn(int argc, char* argv[]){
                     else if(strcmp(argv[i], "-td") == 0 )  UserInput::testDuration= atoi(argv[i+1]);
                     else if(strcmp(argv[i], "-db") == 0 ) {
                         if(strcmp(argv[i+1], "postgres") == 0 ) UserInput::dbChoice = postgres;
-                        else if(strcmp(argv[i+1], "sqlserver") == 0 ) UserInput::dbChoice = sqlserver;
+                        else if(strcmp(argv[i+1], "system-x") == 0 ) UserInput::dbChoice = systemx;
                         else if(strcmp(argv[i+1], "tidb") == 0 ) UserInput::dbChoice = tidb;
                         else if(strcmp(argv[i+1], "mysql") == 0) UserInput::dbChoice = mysql;
 
@@ -225,7 +225,7 @@ void UserInput::processUserIn(int argc, char* argv[]){
                     else if(strcmp(argv[i], "-td") == 0 )  UserInput::testDuration= atoi(argv[i+1]);
                     else if(strcmp(argv[i], "-db") == 0 ) {
                         if(strcmp(argv[i+1], "postgres") == 0 ) UserInput::dbChoice = postgres;
-                        else if(strcmp(argv[i+1], "sqlserver") == 0 ) UserInput::dbChoice = sqlserver;
+                        else if(strcmp(argv[i+1], "system-x") == 0 ) UserInput::dbChoice = systemx;
                         else if(strcmp(argv[i+1], "tidb") == 0 ) UserInput::dbChoice = tidb;
                         else if(strcmp(argv[i+1], "mysql") == 0) UserInput::dbChoice = mysql;
                     }
