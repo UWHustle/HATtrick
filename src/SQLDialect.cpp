@@ -780,6 +780,12 @@ vector<vector<string>> SQLDialect::createIndexStmt = {
                 "CREATE INDEX idx_c_name ON hat.customer (c_name) USING btree;",
                 "CREATE INDEX idx_s_name ON hat.supplier (s_name) USING btree;",
                 "CREATE INDEX idx_d_date ON hat.date (d_date) USING btree;",
+                "alter table hat.CUSTOMER set tiflash replica 1;",
+                "alter table hat.DATE set tiflash replica 1;",
+                "alter table hat.HISTORY set tiflash replica 1;",
+                "alter table hat.LINEORDER set tiflash replica 1;",
+                "alter table hat.PART set tiflash replica 1;"
+                "alter table hat.SUPPLIER set tiflash replica 1;"
                 "ANALYZE TABLE hat.lineorder;",
                 "ANALYZE TABLE hat.customer;",
                 "ANALYZE TABLE hat.supplier;",
