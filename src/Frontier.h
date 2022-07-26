@@ -1,5 +1,5 @@
 #ifndef HATTRICKBENCH_FRONTIER_H
-#define HATTRICKBENCH_FR0NTIER_H
+#define HATTRICKBENCH_FRONTIER_H
 #include "Driver.h"
 #include "Barrier.h"
 #include "Workload.h"

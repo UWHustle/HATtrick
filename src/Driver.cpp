@@ -9,7 +9,7 @@ void Driver::extract_error(const char* fn, SQLHANDLE& handle, SQLSMALLINT type){
     SQLCHAR text[256]= {0};
     SQLSMALLINT len;
     SQLRETURN ret;
-    cout << "\nThe driver reported the following diagnostics whilst running " << fn << "\n\n";
+    cout << "\nThe driver reported the following diagnostics while running " << fn << "\n\n";
     do
     {
         ret = SQLGetDiagRec(type, handle, ++i, state, &native, text, sizeof(text), &len );

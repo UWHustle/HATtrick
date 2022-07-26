@@ -4,7 +4,6 @@
 #include "AnalyticalClient.h"
 #include "TransactionalClient.h"
 #include <iostream>
-#include <bits/stdc++.h>
 #include <math.h>
 using namespace std;
 
