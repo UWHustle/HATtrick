@@ -1,1 +1,6 @@
 /results
+
+# The binary
+HATtrickBench
+src/*.o
+

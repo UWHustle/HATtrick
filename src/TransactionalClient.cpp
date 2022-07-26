@@ -1,5 +1,6 @@
 
 #include "TransactionalClient.h"
+#include <string>
 
 TransactionalClient::TransactionalClient(){}
 
@@ -173,7 +174,8 @@ int TransactionalClient::NewOrderTransactionSS(SQLHDBC& dbc){
     string ordpriority = DataSrc::getOrdPriority(DataSrc::uniformIntDist(0,4));
     char* ord =  &ordpriority[0];
     int shippriority = DataSrc::uniformIntDist(0,1);
-    char* shipp = &to_string(shippriority)[0];
+    string shippriority_str = to_string(shippriority);
+    char* shipp = const_cast<char *>(shippriority_str.data());
     int quantity = DataSrc::uniformIntDist(1, 50);
     double extendedprice = quantity;  // TODO:  multiply with p_price in the store procedure;
     int discount =  DataSrc::uniformIntDist(0, 10);
@@ -278,7 +280,8 @@ void TransactionalClient::NewOrderTransaction(SQLHDBC& dbc){
         ordpriority = DataSrc::getOrdPriority(DataSrc::uniformIntDist(0,4));
         char* ord =  &ordpriority[0];
         shippriority = DataSrc::uniformIntDist(0,1);
-        char* shipp = &to_string(shippriority)[0];
+        string shippriority_str = to_string(shippriority);
+        char* shipp = const_cast<char *>(shippriority_str.data());
         quantity = DataSrc::uniformIntDist(1, 50);
         extendedprice = quantity * p_price;
         discount =  DataSrc::uniformIntDist(0, 10);

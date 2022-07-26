@@ -22,7 +22,6 @@ private:
     SQLHSTMT freshStmt = 0;
     int clientNum = 0;              
     vector<vector<double>> latencyVector = vector<vector<double>>(3);    // history of response time for the 3 transactions
-    int txn_num[3] = {0};           // number of txns executed from each category
     int localCounter = 0;           // local counter of the transactions that the current client is running 
 public:
     TransactionalClient();
