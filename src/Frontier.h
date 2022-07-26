@@ -21,9 +21,6 @@ class Frontier{
 private:
     int max_tc = 0;
     int max_ac = 0;
-    int num_of_ratios = 0;
-    vector<double> t_throughputs;
-    vector<double> a_throughputs;
 public:
     void deleteTuples();
     void createFreshnessTable(int& tc);

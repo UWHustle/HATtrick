@@ -145,10 +145,8 @@ void Frontier::findFrontier(){
     int max_ac = getMaxAC();
     int max_tc = getMaxTC();
     int tc, ac = 0;
-    double ratios[6] = {0, 0.1, 0.2, 0.5, 0.8, 1};
-    const int ratios_num = sizeof(ratios)/sizeof(ratios[0]);
-    double t_throughputs[ratios_num*ratios_num] = {0.0};
-    double a_throughputs[ratios_num*ratios_num] = {0.0};
+    constexpr double ratios[6] = {0, 0.1, 0.2, 0.5, 0.8, 1};
+    constexpr int ratios_num = sizeof(ratios)/sizeof(ratios[0]);
     for(int i=0; i<ratios_num; i++){
     	    for(int j=0; j<ratios_num; j++){
 	        if(floor(ratios[i]*max_tc) == 0 && ratios[i]!=0)

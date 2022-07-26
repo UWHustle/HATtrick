@@ -49,7 +49,7 @@ void Workload::AnalyticalStream(AnalyticalClient* aClient, Globals* g){
 }
 
 void Workload::TransactionalStreamPS(TransactionalClient* tClient, Globals* g, SQLHDBC& dbc){
-    int p, ret_no;
+    int p;
     int loOrderKey;
     chrono::steady_clock::time_point startTime;
     chrono::high_resolution_clock::time_point  execTimeStart;
